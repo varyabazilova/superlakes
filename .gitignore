@@ -3,4 +3,4 @@
 *.qgz
 *.xml
 *.json
-images
+images*/

@@ -15,10 +15,16 @@ def extract_date_from_filename(filename):
     """
     basename = os.path.basename(filename)
     
-    # Look for YYYY-MM-DD pattern
+    # Look for YYYY-MM-DD pattern (strip composites)
     match = re.search(r'(\d{4}-\d{2}-\d{2})', basename)
     if match:
         return match.group(1)
+    
+    # Look for YYYYMMDD pattern (individual scenes)
+    match = re.search(r'(\d{4})(\d{2})(\d{2})', basename)
+    if match:
+        year, month, day = match.groups()
+        return f"{year}-{month}-{day}"
     
     return None
 
