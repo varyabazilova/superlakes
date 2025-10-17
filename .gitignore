@@ -4,3 +4,5 @@
 *.xml
 *.json
 images*/
+downloads/
+ndwi/

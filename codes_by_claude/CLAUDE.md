@@ -215,3 +215,88 @@ python image_processing/map_water_from_ndwi.py --threshold 0.2
 # Step 3b: Map water with cleaning
 python image_processing/map_water_from_ndwi.py --threshold 0.2 --cleaning
 ```
+
+---
+
+# Multi-Year Mosaic Creation - October 16, 2025
+
+## Overview
+Expanded analysis to create date-based mosaics from individual Planet scenes across multiple years (2020-2024). Main focus was processing non-composite datasets to generate one mosaic per acquisition date.
+
+## Key Accomplishments
+
+### 1. **Planet Download Issue Diagnosis**
+- **Problem**: User ordered ~100 images but only got 2-3 files
+- **Root Cause**: Planet's "composite by strip" merges multiple scenes from same date (not multiple dates)
+- **Secondary Issue**: Large downloads (30GB) were failing/corrupting, resulting in `.download` files
+- **Solution**: Found complete non-composite datasets for most years
+
+### 2. **Mosaic Creation Pipeline**
+Successfully created date-based mosaics from individual Planet scenes:
+
+#### **2020**: ✅ **15 mosaics** from 91 individual scenes
+- **Source**: `/Users/varyabazilova/Desktop/glacial_lakes/images/langtang2020_nocomp/`
+- **Output**: 15 temporal mosaics (May-October 2020)
+- **Coverage**: Excellent - dense fall coverage, good seasonal representation
+
+#### **2021**: ✅ **11 mosaics** 
+- **Source**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/images_raw/langtang2021_nocomp/`
+- **Output**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/Images_mosaics/langtang2021mosaics/`
+- **Coverage**: Winter through fall (Jan, Feb-Mar, Sep-Oct)
+
+#### **2022**: ✅ **16 mosaics**
+- **Source**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/images_raw/langtang2022_nocomp/`
+- **Output**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/Images_mosaics/langtang2022mosaics/`
+- **Coverage**: Excellent spring/summer coverage (April-July)
+
+#### **2023**: ⚠️ **12 mosaics** (incomplete)
+- **Source**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/images_raw/langtang2023_nocomp/`
+- **Output**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/Images_mosaics/langtang2023mosaics/`
+- **Issue**: Only 19 images total → **incomplete download**
+
+#### **2024**: ⚠️ **9 mosaics** (incomplete)
+- **Source**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/images_raw/langtang2024_nocomp_strange/`
+- **Output**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/Images_mosaics/langtang2024mosaics/`
+- **Issue**: Only 15 images total (expected ~87) → **severely incomplete download**
+
+### 3. **Code Improvements**
+- **Enhanced date extraction**: Updated `create_date_mosaics.py` to handle both YYYY-MM-DD and YYYYMMDD formats
+- **Added .gitignore rule**: `images*/` to ignore all folders starting with "images"
+- **Corruption handling**: Script now handles corrupted TIFF files gracefully
+
+## Data Quality Assessment
+
+| Year | Images Found | Dates Created | Status | Coverage Quality |
+|------|-------------|---------------|---------|------------------|
+| 2020 | 91 | 15 | ✅ Complete | Excellent |
+| 2021 | ~50+ | 11 | ✅ Complete | Good |
+| 2022 | ~60+ | 16 | ✅ Complete | Excellent |
+| 2023 | 19 | 12 | ❌ Incomplete | Poor |
+| 2024 | 15 | 9 | ❌ Incomplete | Poor |
+
+## Current Issues & Next Steps
+
+### **Immediate Actions Needed**
+1. **Re-download 2023 & 2024 datasets** - current downloads are severely incomplete
+2. **Use Planet CLI for reliable downloads** - provided example with Planet Scene IDs:
+   ```bash
+   planet data download --item-type PSScene --asset-type analytic_sr_udm2 --dest ./downloads --id-list ids.txt
+   ```
+
+### **Ready for Analysis**
+- **2020-2022**: 42 date-based mosaics ready for water detection analysis
+- **Covers**: 3 years of temporal data with good seasonal representation
+- **Next step**: Run water detection pipeline on these complete datasets
+
+### **File Organization**
+- **Raw images**: `images_raw/langtangYYYY_nocomp/`
+- **Mosaics**: `Images_mosaics/langtangYYYYmosaics/`
+- **Previous work**: CLAUDE.md documents complete 2025 analysis with fixed threshold approach
+
+## Technical Notes
+- **Mosaic script**: `image_processing/create_date_mosaics.py` (handles both individual scenes and strips)
+- **File pattern**: `*_3B_AnalyticMS_SR_harmonized_clip.tif` for individual scenes
+- **Corruption issues**: Some Planet files have TIFF read errors, script skips these automatically
+
+---
+**Status**: 2020-2022 datasets complete and ready for water detection analysis. 2023-2024 require re-download to proceed.
