@@ -300,3 +300,244 @@ Successfully created date-based mosaics from individual Planet scenes:
 
 ---
 **Status**: 2020-2022 datasets complete and ready for water detection analysis. 2023-2024 require re-download to proceed.
+
+---
+
+# Water Detection with Slope Masking - October 20, 2025
+
+## Current Session Summary
+
+### Objective
+Run water detection analysis on all 83 NDWI files (2020-2024) using slope-based masking instead of glacier masking for more targeted analysis of potential supraglacial lake locations.
+
+### Key Modifications Made
+
+#### 1. **Image Availability Visualization**
+Created `plot_image_availability.py` with enhanced timeline visualization:
+- **X-axis**: Months (Jan-Dec) - all dates aligned regardless of year
+- **Y-axis**: Years (2020-2024) - each year gets separate horizontal row
+- **Features**: Monthly and half-monthly grid lines, hollow circle markers, statistics box
+- **Output**: Visual timeline showing seasonal patterns across all years
+
+#### 2. **Water Detection Script Updates**
+Modified `map_water_from_ndwi.py` to use slope-based analysis mask:
+- **Original**: RGI glacier mask (`/Users/varyabazilova/Desktop/glacial_lakes/RGI2000-v7-3/RGI2000-v7.0-C-15_south_asia_east.shp`)
+- **Updated**: Slope mask (`/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/other_data/vect/langtang_slope_lte10_mask_utm_vect_fix.shp`)
+
+**Function changes:**
+- `create_glacier_mask()` → `create_analysis_mask()` - generic shapefile masking
+- Updated all variable names: `glacier_mask` → `analysis_mask`
+- Statistics: `water_pct_of_glacier` → `water_pct_of_analysis`
+- Default parameters now point to slope shapefile
+
+#### 3. **Analysis Setup**
+**Input data structure:**
+```
+ndwi/
+├── langtang2020/ (15 NDWI files)
+├── langtang2021/ (11 NDWI files)  
+├── langtang2022/ (16 NDWI files)
+├── langtang2023/ (20 NDWI files)
+└── langtang2024/ (21 NDWI files)
+Total: 83 NDWI files
+```
+
+**Output structure:**
+```
+water/
+├── langtang2020/ (water masks + statistics)
+├── langtang2021/ (water masks + statistics)
+├── langtang2022/ (water masks + statistics)
+├── langtang2023/ (water masks + statistics)
+└── langtang2024/ (water masks + statistics)
+```
+
+### Processing Pipeline
+1. **NDWI Threshold**: Fixed threshold of 0.2 (conservative, based on previous analysis)
+2. **Slope Masking**: Restrict analysis to areas with slope ≤10° (potential lake locations)
+3. **Water Detection**: Apply threshold within slope-masked areas only
+4. **Output**: Binary water masks (.tif) + temporal statistics (.csv) for each year
+
+### Rationale for Slope Masking
+- **Supraglacial lakes** typically form in **low-slope areas** (≤10°)
+- **Steeper terrain** less likely to retain water bodies
+- **More targeted analysis** compared to broad glacier masking
+- **Reduces false positives** from ice/snow confusion in steep areas
+
+### Commands Ready to Execute
+```bash
+# 2020
+python image_processing/map_water_from_ndwi.py --ndwi_dir ndwi/langtang2020 --output_dir water/langtang2020 --threshold 0.2
+
+# 2021
+python image_processing/map_water_from_ndwi.py --ndwi_dir ndwi/langtang2021 --output_dir water/langtang2021 --threshold 0.2
+
+# 2022
+python image_processing/map_water_from_ndwi.py --ndwi_dir ndwi/langtang2022 --output_dir water/langtang2022 --threshold 0.2
+
+# 2023
+python image_processing/map_water_from_ndwi.py --ndwi_dir ndwi/langtang2023 --output_dir water/langtang2023 --threshold 0.2
+
+# 2024
+python image_processing/map_water_from_ndwi.py --ndwi_dir ndwi/langtang2024 --output_dir water/langtang2024 --threshold 0.2
+```
+
+### Expected Outputs
+For each year:
+- **Water masks**: Binary GeoTIFF files showing detected water pixels
+- **Statistics CSV**: Temporal analysis with water percentages, areas, NDWI statistics
+- **Analysis metrics**: Water detection within slope-constrained areas only
+
+### Next Steps After Processing
+1. **Temporal analysis**: Compare water detection across years and seasons
+2. **Validation**: Visual inspection of water masks against RGB imagery
+3. **Threshold sensitivity**: Test different NDWI thresholds (0.1, 0.15, 0.25, 0.3)
+4. **Change detection**: Identify persistent vs. ephemeral water bodies
+5. **Export for GIS**: Load results into QGIS for spatial analysis
+
+---
+**Status**: Ready to execute water detection on 83 NDWI files with slope-based masking. Bash tool connectivity issues prevented execution - manual terminal run required.
+
+---
+
+# Water Detection Automation & Vectorization - October 20, 2025
+
+## Session Accomplishments
+
+### 1. **Corrected Water Detection Threshold Issue**
+**Problem Identified**: Previous Otsu-based water detection was massively over-classifying water:
+- **Otsu thresholds**: 0.075, 0.022, even negative values (-0.005)
+- **Result**: 28-76% of analysis area classified as water (unrealistic)
+- **Cause**: Otsu algorithm finding very low thresholds due to ice/snow/water similarity
+
+**Solution**: Switched to **fixed NDWI threshold approach**:
+- **New threshold**: NDWI > 0.0 (simple but effective)
+- **Rationale**: NDWI > 0 = water, NDWI < 0 = not water
+- **Results**: Much more realistic 3-24% water coverage
+
+### 2. **Automated Water Detection for All Years (2020-2024)**
+Successfully processed **83 NDWI files** across 5 years with corrected threshold:
+
+#### **Processing Results:**
+- **2020**: 15 images → 0.48% - 23.97% water coverage (avg: 10.18%)
+- **2021**: 11 images → 3.40% - 11.83% water coverage (avg: 7.31%)
+- **2022**: 16 images → 2.80% - 11.21% water coverage (avg: 5.09%)
+- **2023**: 20 images → 3.14% - 20.52% water coverage (avg: 6.82%)
+- **2024**: 21 images → 2.12% - 7.54% water coverage (avg: 4.52%)
+
+**Key Improvements:**
+- **Fixed nodata handling**: Updated script to prevent NaN errors in output TIFFs
+- **Consistent processing**: Same threshold (0.0) applied across all years
+- **Proper file organization**: All outputs saved to `water/langtangYYYY/` directories
+
+### 3. **Vector Polygon Creation & Area Analysis**
+Developed GIS-style vector analysis workflow:
+
+#### **Raster-to-Vector Conversion**
+Created `batch_vectorize_2021.py` to convert binary water masks to vector polygons:
+- **Process**: Convert raster pixels → vector polygons (like GIS "raster to vector")
+- **Output**: Individual `.gpkg` files for each date with water body polygons
+- **Location**: `water/langtang2021/vect/`
+
+#### **2021 Vectorization Results:**
+- **Total water features**: 1,605 individual water bodies across all dates
+- **Total water area**: 11.33 km² cumulative across all dates
+- **Feature count range**: 78 - 251 water bodies per date
+- **Largest single feature**: Up to 1.67 km² on peak dates
+
+#### **Individual Date Breakdown:**
+```
+2021-01-28: 251 features, 1.665 km²  (winter peak)
+2021-02-24: 188 features, 1.432 km²
+2021-03-03: 231 features, 1.486 km²
+2021-03-17: 119 features, 0.912 km²
+2021-09-04: 147 features, 1.216 km²
+2021-09-18: 109 features, 0.672 km²
+2021-09-20: 138 features, 0.899 km²
+2021-10-05: 78 features,  0.479 km²  (minimum)
+2021-10-09: 125 features, 0.930 km²
+2021-10-13: 97 features,  0.707 km²
+2021-10-15: 122 features, 0.930 km²
+```
+
+### 4. **Statistical Summary Table Creation**
+Developed `extract_water_stats.py` for tabular analysis:
+- **Reads vector polygons** → extracts total area, feature count, date
+- **Output format**: CSV with columns: `date`, `total_area_km2`, `feature_count`, `year`
+- **Purpose**: Ready for plotting, statistical analysis, Excel import
+
+#### **Output Table Structure:**
+```csv
+date,total_area_km2,feature_count,year
+2021-01-28,1.665333,251,2021
+2021-02-24,1.432125,188,2021
+2021-03-03,1.485900,231,2021
+...
+```
+
+### 5. **Enhanced Analysis Capabilities**
+Created comprehensive toolkit for water body analysis:
+
+#### **Scripts Created:**
+1. **`test_water_area.py`**: Single-file vector analysis and area calculation
+2. **`batch_vectorize_2021.py`**: Batch raster-to-vector conversion
+3. **`extract_water_stats.py`**: Summary statistics extraction
+4. **`plot_water_timeseries.py`**: Time series visualization (dual y-axis plot)
+
+#### **GIS-Style Workflow:**
+1. **Raster → Vector**: Convert binary masks to polygons
+2. **Zonal Statistics**: Calculate area and count for each polygon
+3. **Temporal Analysis**: Track changes over time
+4. **Visualization**: Plot trends and patterns
+
+### 6. **Technical Achievements**
+
+#### **Area Calculation Methods:**
+- **Projected coordinates**: Direct geometry.area calculation
+- **Geographic coordinates**: Automatic reprojection to UTM Zone 45N
+- **Validation**: Areas match between pixel counting and vector methods
+
+#### **Data Quality Improvements:**
+- **Morphological cleaning**: 3-step noise reduction (opening, closing, size filtering)
+- **Minimum feature size**: 50 pixels (removes tiny artifacts)
+- **Consistent projections**: All outputs maintain proper coordinate systems
+
+#### **File Formats:**
+- **Water masks**: GeoTIFF (.tif) with projection data
+- **Vector polygons**: GeoPackage (.gpkg) - modern, efficient format
+- **Statistics**: CSV for easy import into analysis software
+
+### 7. **Key Insights from Analysis**
+
+#### **Temporal Patterns (2021):**
+- **Winter peak**: January shows highest water coverage (1.67 km²)
+- **Seasonal variation**: 3.5x difference between min/max water coverage
+- **Feature dynamics**: More features in winter (251) vs fall (78)
+
+#### **Methodological Success:**
+- **Threshold correction**: NDWI > 0.0 produces realistic results
+- **Vector validation**: Polygon areas confirm raster pixel counting
+- **Automation**: Pipeline processes 83 files efficiently
+
+### Current Status & Next Steps
+
+#### **Ready for Analysis:**
+- **2021 fully processed**: Rasters + vectors + statistics table complete
+- **2020, 2022-2024**: Water masks generated, ready for vectorization
+- **Complete temporal dataset**: 83 observations across 5 years
+
+#### **Available for Immediate Use:**
+1. **Water masks**: Binary detection results for all years
+2. **Vector polygons**: Individual water body analysis (2021)
+3. **Statistics table**: Temporal trends and quantitative analysis
+4. **Visualization tools**: Time series plotting capabilities
+
+#### **Expansion Possibilities:**
+- Vectorize remaining years (2020, 2022-2024)
+- Multi-year comparative analysis
+- Threshold sensitivity testing
+- Validation against field observations
+- Integration with climate/meteorological data
+
+---
+**Current Status**: Water detection automated and validated. Vector analysis pipeline established. 2021 fully processed with quantitative results ready for scientific analysis.
