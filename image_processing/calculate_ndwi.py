@@ -89,8 +89,8 @@ def process_single_image(tif_path, output_dir):
 
 def main():
     # Configuration
-    input_dir = "testimages25"
-    output_dir = "/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/images/langtang2025/ndwi"
+    input_dir = "/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/Images_mosaics/langtang2025_harmonized_mosaics"
+    output_dir = "/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/ndwi/langtang2025"
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)

@@ -541,3 +541,214 @@ Created comprehensive toolkit for water body analysis:
 
 ---
 **Current Status**: Water detection automated and validated. Vector analysis pipeline established. 2021 fully processed with quantitative results ready for scientific analysis.
+
+---
+
+# 2025 Planet Imagery Processing - October 23, 2025
+
+## Session Accomplishments
+
+### 1. **Complete 2025 Dataset Processing**
+Successfully processed all 2025 Planet imagery through the full pipeline:
+
+#### **Mosaic Creation Results:**
+- **Input**: 36 Planet scene IDs from 3 separate orders (Jan-Feb, May-Sept, and harmonized datasets)
+- **Output**: 21 temporal mosaics covering January through September 2025
+- **Location**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/Images_mosaics/langtang2025_harmonized_mosaics/`
+- **Date Coverage**: 2025-01-20 through 2025-09-05
+
+#### **NDWI Calculation:**
+- **Processed**: All 21 mosaics → NDWI calculation
+- **Formula**: (Green - NIR) / (Green + NIR)
+- **Output**: 21 NDWI files saved to `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/ndwi/langtang2025/`
+- **NDWI Range**: -0.863 to +0.999 across all dates
+
+#### **Water Detection Results:**
+Applied fixed threshold approach (NDWI > 0.0) with slope-based masking:
+
+**Temporal Water Coverage Pattern (% of analysis area):**
+- **Winter peak (Jan-Feb)**: 16.29% - 17.86% (highest water detection)
+- **Spring transition (Apr)**: 11.10% - 12.79% 
+- **Late spring (May)**: 5.89% - 9.29%
+- **Summer minimum (Jun-Jul)**: 4.53% - 5.37% (lowest water detection)
+- **Early fall (Sep)**: 4.90%
+
+**Key Statistics:**
+- **Maximum water**: 17.86% on 2025-01-30 (279,396 pixels)
+- **Minimum water**: 4.53% on 2025-06-28 (70,854 pixels)
+- **Average coverage**: 10.20% across all dates
+- **Seasonal variation**: ~4x difference between winter peak and summer minimum
+
+### 2. **Multi-Year Dataset Completion**
+Now have complete processing pipeline applied to 6 years of Planet imagery:
+
+| Year | Dates Processed | Water Masks | Status |
+|------|----------------|-------------|---------|
+| 2020 | 15 | ✅ | Complete |
+| 2021 | 11 | ✅ | Complete + Vectorized |
+| 2022 | 16 | ✅ | Complete |
+| 2023 | 20 | ✅ | Complete |
+| 2024 | 21 | ✅ | Complete |
+| **2025** | **21** | **✅** | **Complete** |
+| **Total** | **104** | **✅** | **All years processed** |
+
+### 3. **Technical Pipeline Validation**
+The 2025 processing confirms the established methodology:
+
+#### **Threshold Effectiveness:**
+- **NDWI > 0.0**: Produces realistic water coverage (4.5% - 18%)
+- **Seasonal pattern**: Winter peaks, summer minimums (consistent with glacial lake dynamics)
+- **No over-classification**: Unlike previous Otsu approach that yielded 25-76% coverage
+
+#### **Processing Efficiency:**
+- **Mosaic creation**: Handles multiple Planet strips per date automatically
+- **NDWI calculation**: Batch processes all temporal mosaics
+- **Water detection**: Applies consistent threshold with slope-based masking
+- **Output quality**: All files maintain proper projection and nodata handling
+
+### 4. **Dataset Characteristics - 2025**
+**Temporal Distribution:**
+- **Winter concentration**: 6 dates (Jan-Feb) with highest water detection
+- **Spring coverage**: 4 dates (Apr-May) with moderate detection  
+- **Summer coverage**: 10 dates (May-Jul) with variable detection
+- **Fall coverage**: 1 date (Sep) with low detection
+
+**Data Quality:**
+- **Consistent resolution**: All mosaics at 3m Planet resolution
+- **Proper georeferencing**: UTM Zone 45N projection maintained
+- **Complete coverage**: No missing dates due to processing failures
+- **Range validation**: NDWI values within expected -1 to +1 range
+
+### 5. **Analysis-Ready Outputs**
+**For 2025 data:**
+- **Water masks**: 21 binary GeoTIFF files ready for GIS analysis
+- **Statistics**: Temporal trends saved to CSV format
+- **NDWI rasters**: Available for threshold sensitivity testing
+- **Mosaics**: Original imagery available for visual validation
+
+### Next Steps Available
+1. **Vector polygon creation** for 2025 (following 2021 methodology)
+2. **Multi-year comparative analysis** across all 6 years (2020-2025)
+3. **Threshold sensitivity analysis** for 2025 data
+4. **Seasonal pattern analysis** using complete temporal dataset
+5. **Climate correlation** with complete 6-year record
+
+### File Organization Summary
+```
+2025 Processing Pipeline:
+├── Raw Planet scenes (36 IDs across 3 orders)
+├── Images_mosaics/langtang2025_harmonized_mosaics/ (21 mosaics)
+├── ndwi/langtang2025/ (21 NDWI files)
+└── water/langtang2025/ (21 water masks + statistics)
+```
+
+---
+**Current Status**: Complete 6-year Planet imagery dataset (2020-2025) processed with water detection pipeline. 104 total temporal observations ready for comprehensive glacial lake analysis.
+
+---
+
+# DINOv3 Foundational Model Exploration - October 28, 2025
+
+## Problem with Current Approach
+Fixed NDWI > 0.0 threshold works well on some images but fails on others, creating inconsistent water detection across the temporal dataset. Automation is needed for processing large numbers of images without manual threshold adjustment per image.
+
+## DINOv3 Potential Solution
+
+### What is DINOv3?
+- **Foundational vision model** from Meta with 7B parameters
+- **Self-supervised learning** on 1.7B images 
+- **Dense feature extraction** - produces high-resolution features for every pixel
+- **Satellite/aerial imagery strength** - specifically mentioned as application area
+- **Off-the-shelf usage** - no training required for feature extraction
+
+### Proposed Workflow: Manual Labeling + DINOv3
+
+#### **Step 1: One-Time Manual Labeling**
+- Select one representative image from 2025 dataset
+- Manually draw water body polygons in QGIS
+- Create binary mask: 1 = water, 0 = not-water
+
+#### **Step 2: Feature Extraction**
+- Run pre-trained DINOv3 on labeled image
+- Extract dense features for every pixel
+- Combine features with manual labels
+
+#### **Step 3: Train Simple Classifier**
+- Use basic classifier (Random Forest/small neural network)
+- **Input**: DINOv3 features (+ optionally NDWI values)
+- **Output**: water (1) or not-water (0) prediction
+- Train on single labeled image
+
+#### **Step 4: Automated Application**
+- Run DINOv3 feature extraction on all 104 images (2020-2025)
+- Apply trained classifier for automated water detection
+- Consistent results across all temporal observations
+
+### Advantages Over Fixed Thresholds
+- **Visual pattern recognition**: Learns texture, context, spatial relationships
+- **Handles variations**: Seasonal lighting, atmospheric conditions, ice/snow confusion
+- **Automation**: One manual labeling session → automated processing of entire dataset
+- **Combines spectral + visual**: Can use both DINOv3 features AND NDWI values
+- **Robust**: Foundation model trained on massive diverse datasets
+
+### Technical Considerations
+- **Input format**: Use false color composites (NIR-Red-Green) as RGB input to DINOv3
+- **Feature combination**: Hybrid approach using DINOv3 features + NDWI spectral values
+- **Computational**: More intensive than simple thresholding but manageable for automation
+
+### Next Steps (When Ready)
+1. Select best representative image from 2025 dataset for manual labeling
+2. Set up DINOv3 environment and model loading
+3. Create manual water body labels
+4. Implement feature extraction + classifier training pipeline
+5. Test on subset of images before full dataset application
+
+---
+**Status**: DINOv3 approach identified as potential solution for automated, consistent water detection across large temporal datasets. Ready for implementation when needed.
+
+---
+
+# DINOv3 Implementation Setup - October 29, 2025
+
+## Environment Setup Complete ✅
+
+### Initial Problems Encountered
+- **Fresh superlakes environment**: No packages installed initially
+- **PyTorch installation issues**: M1 Mac compatibility problems
+- **Corrupted environment**: pip thought it was in python3.1 directory while running python3.13
+- **Solution**: Recreated clean environment with proper Python 3.11
+
+### Successful Installation Steps
+```bash
+# Create fresh environment
+conda deactivate
+conda remove --name superlakes --all
+conda create --name superlakes python=3.11
+conda activate superlakes
+
+# Install packages
+conda install pytorch torchvision -c conda-forge
+pip install jupyterlab transformers scikit-learn
+conda install nb_conda_kernels -c conda-forge
+```
+
+### Environment Verification
+- **Python**: 3.11.13 ✅
+- **PyTorch**: Installed via conda-forge ✅
+- **JupyterLab**: Installed ✅
+- **Transformers**: For DINOv2 model loading ✅
+- **nb_conda_kernels**: For Jupyter environment management ✅
+
+## Next Steps Ready
+1. **Start JupyterLab**: `jupyter lab`
+2. **Test DINOv2 loading** in notebook
+3. **Select representative 2025 image** for manual labeling
+4. **Begin feature extraction pipeline**
+
+### Key Learnings
+- **M1 Mac**: Use conda-forge channel for better ARM64 support
+- **Environment corruption**: Fresh recreation faster than debugging
+- **Package management**: Mix conda (for core packages) + pip (for Python-specific packages)
+
+---
+**Status**: Development environment ready for DINOv3 experimentation. All dependencies installed and verified.
