@@ -2,6 +2,8 @@
 *.png
 *.qgz
 *.xml
+.ipynb_checkpoints/
+dinov3_tryout/test_code/.ipynb_checkpoints/
 *.json
 images*/
 downloads/
