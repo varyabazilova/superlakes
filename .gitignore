@@ -1,9 +1,11 @@
+.DS_Store
 *.tif
 *.png
 *.qgz
 *.xml
 .ipynb_checkpoints/
 dinov3_tryout/test_code/.ipynb_checkpoints/
+segment-anything-2/
 *.json
 images*/
 downloads/
