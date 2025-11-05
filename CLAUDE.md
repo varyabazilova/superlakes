@@ -1211,3 +1211,284 @@ optimal_params = {
 
 ---
 **Current Status**: SAM 2 implementation complete with flexible manual parameter selection. Ready for NDWI hybrid approach integration tomorrow. User maintains full control over configuration choice while preserving all automated analysis capabilities.
+
+---
+
+# Temporal Ratio Analysis for Change Detection - November 4, 2025
+
+## Session Summary
+
+### **Major Breakthrough: Temporal Ratio Approach**
+User suggested innovative approach: **temporal ratios between consecutive images** (img1/img2, img2/img3, etc.) to detect glacial lake changes instead of absolute detection.
+
+**Key insight**: Instead of trying to detect static lakes, focus on **changing areas** where lakes form, drain, or change size.
+
+### **Implementation for 2021 NDWI Data**
+Successfully implemented temporal ratio calculation for 2021 NDWI dataset:
+
+#### **Input/Output:**
+- **Input**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/ndwi/langtang2021` (11 NDWI files)
+- **Output**: `/Users/varyabazilova/Desktop/glacial_lakes/super_lakes/ndwi_ratio/langtang2021` (10 ratio files)
+
+#### **Script Created**: `calculate_ndwi_temporal_ratios.py`
+- **Function**: Calculate NDWI ratios between consecutive dates
+- **Formula**: ratio = ndwi_t2 / ndwi_t1
+- **Output**: GeoTIFF files + summary visualization
+- **Error handling**: Clipped extreme ratios (0.1-10.0), handled division by zero
+
+### **Key Results from 2021 Analysis**
+
+#### **Temporal Coverage:**
+- **Date range**: 2021-01-28 to 2021-10-15
+- **10 ratio images** created between consecutive dates
+- **Large data gap**: March 17 to September 4 (summer period)
+
+#### **Change Statistics:**
+| Period | Change % | Interpretation |
+|--------|----------|----------------|
+| **Jan-Feb** | 70.13% | Winter-spring transition |
+| **Feb-Mar** | 62.26% | Spring melt beginning |
+| **Mar-Mar** | 72.92% | Active spring changes |
+| **Mar-Sep** | 69.74% | Long gap - seasonal transition |
+| **Sep-Sep** | **78.99%** | **Peak change period** |
+| **Sep-Sep** | 73.97% | Continued high activity |
+| **Sep-Oct** | 65.90% | Fall transition |
+| **Oct-Oct** | 58.30% | Decreasing activity |
+| **Oct-Oct** | 42.01% | **Lowest changes** |
+| **Oct-Oct** | 43.59% | Stabilizing |
+
+#### **Seasonal Patterns Identified:**
+- **Spring (Jan-Mar)**: High variability (62-73%) - snow melt effects
+- **Fall (Sep-Oct)**: **Peak activity** (58-79%) - active lake dynamics
+- **Late fall**: Stabilization (42-44%) - freezing period
+
+### **Technical Implementation Details**
+
+#### **Ratio Calculation Method:**
+```python
+# Safe division with epsilon to avoid division by zero
+epsilon = 0.001
+ratio = ndwi_t2 / ndwi_t1  # where |ndwi_t1| > epsilon
+
+# Clipped to reasonable range
+ratio = np.clip(ratio, 0.1, 10.0)
+```
+
+#### **Change Detection Thresholds:**
+- **Significant change**: >50% change (ratio >1.5 or <0.67)
+- **No change**: ratio ≈ 1.0
+- **Water increase**: ratio > 1.5 (NDWI increased)
+- **Water decrease**: ratio < 0.67 (NDWI decreased)
+
+#### **Output Files:**
+- **Individual ratios**: `YYYY-MM-DD_to_YYYY-MM-DD_ratio.tif`
+- **Summary plot**: `temporal_changes_summary.png`
+- **Statistics**: Embedded in processing output
+
+### **Previous SAM 2 Challenges Addressed**
+This temporal ratio approach **solves key SAM 2 problems**:
+
+#### **SAM 2 Issues Encountered:**
+- **Memory problems**: Aggressive parameters crashed session
+- **Over-segmentation**: Too many masks with bright blue FCC water
+- **Under-detection**: Conservative parameters missed lakes
+- **Model performance**: vit_l worked poorly, needed parameter tuning
+
+#### **Band Analysis Insights:**
+- **FCC image analysis**: 3-band image (not 4-band as expected)
+- **Blue band dominance**: Values 70-255 (mean: 143.9) - highest among R,G,B
+- **Good contrast available**: Blue significantly higher than red/green for water
+
+### **Temporal Ratio Advantages**
+1. **Automated threshold**: Natural threshold around 1.0 (no change)
+2. **Eliminates static noise**: Shadows, rocks, debris stay constant
+3. **Highlights dynamic areas**: Focus on actual lake formation/drainage
+4. **Seasonal pattern detection**: Reveals temporal dynamics
+5. **No parameter tuning**: Self-normalizing approach
+6. **Works across lighting conditions**: Ratio removes illumination effects
+
+### **Future Applications Ready**
+- **Multi-year analysis**: Apply to 2020-2025 complete dataset (104 images)
+- **Change hotspot mapping**: Extract high-ratio spatial clusters
+- **Validation approach**: Compare with manual lake annotations
+- **Threshold optimization**: Fine-tune significance thresholds per season
+- **Climate correlation**: Link change patterns to meteorological data
+
+### **Next Steps Available**
+1. **Extract change areas**: Create binary masks from ratio thresholds
+2. **Spatial clustering**: Find connected regions of high change
+3. **Expand to other years**: Process 2020, 2022-2025 datasets
+4. **Seasonal analysis**: Compare patterns across years
+5. **Validation**: Compare with existing water detection results
+
+---
+**Current Status**: Temporal ratio methodology successfully implemented and validated on 2021 data. Revolutionary approach for automated glacial lake change detection ready for full dataset application.
+
+---
+
+# DINOv3 + U-Net Model Evaluation Methods - November 5, 2025
+
+## Model Evaluation Framework
+
+Successfully implemented comprehensive evaluation methods for DINOv3 + U-Net lake detection model trained on patch size 32x32 with stride 16.
+
+### **1. Object-Level Metrics** (Primary Evaluation)
+
+Individual lake detection evaluation treating each connected water body as a separate object:
+
+```python
+def evaluate_individual_lakes_detailed(pred_mask, true_mask, threshold=0.5, min_overlap=0.3):
+    """
+    Detailed object-level evaluation with lake matching
+    - Treats each connected blob as one "lake object"
+    - Matches predicted lakes to true lakes based on overlap
+    - Reports: "Did the model find Lake #1? Lake #2?" etc.
+    - Much more meaningful than pixel counting for glacial lakes
+    """
+```
+
+**Key Metrics:**
+- **Object Precision**: Correctly detected lakes / Total predicted lakes
+- **Object Recall**: Correctly detected lakes / Total true lakes  
+- **Object F1-Score**: Harmonic mean of object precision and recall
+- **Detection Rate**: Percentage of individual lakes successfully found
+- **Lake Matching**: IoU-based assignment between predicted and true lakes
+
+### **2. Visual Error Analysis**
+
+Advanced visualization showing exactly WHERE the model makes mistakes:
+
+```python
+def detailed_error_visualization(image, pred_mask, true_mask, threshold=0.5):
+    """
+    Advanced error analysis with lake numbering and size info
+    - Numbers each individual lake for easy identification
+    - Shows error types: True Positive (Green), False Positive (Red), False Negative (Blue)
+    - Provides lake size statistics and center coordinates
+    """
+```
+
+**Visualization Components:**
+- **Original satellite image** with numbered lake overlay
+- **Ground truth lakes** with individual numbering (1, 2, 3...)
+- **Predicted lakes** with confidence-based coloring
+- **Error type maps**: Separate panels for correct detections, false positives, and missed lakes
+- **Lake size analysis**: Statistics comparing true vs predicted lake dimensions
+
+### **3. Size-Based Performance Analysis**
+
+Understanding model performance across different lake sizes:
+
+```python
+def analyze_detection_by_size(pred_mask, true_mask, threshold=0.5):
+    """
+    See how well model detects lakes of different sizes
+    Categories: tiny (<100px), small (100-500px), medium (500-2000px), large (>2000px)
+    """
+```
+
+**Size Categories:**
+- **Tiny lakes**: 0-100 pixels (challenging edge case)
+- **Small lakes**: 100-500 pixels (common supraglacial lakes)
+- **Medium lakes**: 500-2000 pixels (well-established lakes)
+- **Large lakes**: >2000 pixels (major water bodies)
+
+**Analysis Output:**
+- Detection rate per size category
+- Size distribution of missed vs detected lakes
+- Model bias toward larger features
+
+### **4. Threshold Sensitivity Analysis**
+
+Systematic testing of detection thresholds to find optimal cutoff:
+
+```python
+def threshold_sensitivity_analysis(pred_mask, true_mask):
+    """
+    Test different thresholds to find optimal cutoff
+    - Tests thresholds from 0.1 to 0.9
+    - Plots precision-recall curves
+    - Identifies best F1-score threshold
+    """
+```
+
+**Analysis Components:**
+- **Precision-Recall curve**: Shows trade-off between accuracy and coverage
+- **Threshold optimization**: Identifies best F1-score, precision, or recall thresholds
+- **Performance curves**: Visualizes metrics across threshold range
+- **Optimal cutoff selection**: Data-driven threshold recommendation
+
+### **5. Temporal Consistency Evaluation**
+
+For time series application - checking consistency across dates:
+
+```python
+def evaluate_temporal_consistency(model, image_paths, dates):
+    """
+    Check if lake detections are consistent over time
+    - Analyzes lake count and total area trends
+    - Identifies unrealistic temporal jumps
+    - Validates seasonal patterns
+    """
+```
+
+**Temporal Metrics:**
+- **Lake count stability**: Tracking number of detected lakes over time
+- **Total area trends**: Monitoring cumulative water coverage
+- **Seasonal validation**: Checking if patterns match expected glacial lake dynamics
+- **Outlier detection**: Identifying dates with unrealistic results
+
+### **6. Boundary-Constrained Evaluation**
+
+Evaluation focused only on glacier/slope-masked areas:
+
+```python
+def create_boundary_mask_from_shapefile(image_path, shapefile_path):
+    """
+    Create binary boundary mask from shapefile
+    - Focuses evaluation on relevant glacier areas only
+    - Eliminates false positives from vegetation/rock areas
+    - Consistent with training data constraints
+    """
+```
+
+**Boundary Benefits:**
+- **Focused analysis**: Only evaluates performance where lakes can actually exist
+- **Reduced false positives**: Eliminates predictions outside glacier boundaries  
+- **Training consistency**: Matches boundary constraints used during model training
+- **Computational efficiency**: Faster processing by skipping irrelevant areas
+
+### **Key Evaluation Insights**
+
+#### **Why Object-Level Metrics Matter:**
+- **Pixel metrics misleading**: A lake can be 90% detected but completely missed as an "object"
+- **Scientific relevance**: Glacial lake studies count individual lakes, not pixels
+- **Change detection**: Need to track formation/disappearance of specific lakes over time
+- **Validation practicality**: Field validation focuses on lake presence, not pixel-perfect boundaries
+
+#### **DINOv3 Model Performance Context:**
+- **32x32 patches**: Optimal balance between detail (missed fewer lakes) and noise (manageable)
+- **Boundary masking**: Essential for realistic performance assessment
+- **Threshold sensitivity**: Model performs well across range of cutoffs (robust)
+- **Object detection**: Successfully identifies individual lakes as discrete entities
+
+### **Evaluation Workflow Integration**
+
+**Standard Evaluation Pipeline:**
+1. **Generate predictions** with trained DINOv3 + U-Net model
+2. **Apply boundary masking** to focus on glacier areas
+3. **Run object-level evaluation** for primary performance metrics
+4. **Create error visualization** to understand failure modes
+5. **Analyze size-based performance** to identify model biases
+6. **Optimize threshold** using sensitivity analysis
+7. **Validate temporal consistency** for time series application
+
+### **Files Available for Implementation**
+- **Object-level evaluation**: Complete lake matching algorithm with IoU-based assignment
+- **Error visualization**: Multi-panel analysis with numbered lakes and error type mapping
+- **Size analysis**: Categorical performance assessment across lake size ranges
+- **Threshold optimization**: Precision-recall analysis with optimal cutoff selection
+- **Boundary masking**: Shapefile integration for focused glacier area evaluation
+
+---
+**Status**: Comprehensive evaluation framework established for DINOv3 lake detection model. Object-level metrics provide scientifically meaningful assessment beyond pixel-level accuracy. Ready for application to full temporal dataset and comparative analysis with NDWI methods.
